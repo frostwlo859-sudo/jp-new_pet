@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
+import type { AdoptionRequest } from "@/lib/adoptions-store";
 import {
   dogAgeLabel,
   formatPrice,
@@ -28,10 +29,12 @@ const emptyForm = {
 
 type Props = {
   initialDogs: Dog[];
+  initialRequests: AdoptionRequest[];
 };
 
-export function AdminDashboard({ initialDogs }: Props) {
+export function AdminDashboard({ initialDogs, initialRequests }: Props) {
   const [dogs, setDogs] = useState(initialDogs);
+  const [requests, setRequests] = useState(initialRequests);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -46,9 +49,42 @@ export function AdminDashboard({ initialDogs }: Props) {
   }, [dogs]);
 
   async function refresh() {
-    const res = await fetch("/api/dogs");
-    const data = (await res.json()) as Dog[];
-    setDogs(data);
+    const [dogsRes, reqRes] = await Promise.all([
+      fetch("/api/dogs"),
+      fetch("/api/adoptions"),
+    ]);
+    if (dogsRes.ok) {
+      setDogs((await dogsRes.json()) as Dog[]);
+    }
+    if (reqRes.ok) {
+      setRequests((await reqRes.json()) as AdoptionRequest[]);
+    }
+  }
+
+  async function seedDatabase() {
+    setBusy(true);
+    setMessage("");
+    const res = await fetch("/api/admin/seed", { method: "POST" });
+    const payload = (await res.json()) as { message?: string; error?: string };
+    setBusy(false);
+    setMessage(payload.message || payload.error || "Seed finished.");
+    await refresh();
+  }
+
+  async function setRequestStatus(
+    id: string,
+    status: AdoptionRequest["status"],
+  ) {
+    const res = await fetch(`/api/adoptions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      setMessage("Could not update adoption request.");
+      return;
+    }
+    await refresh();
   }
 
   async function logout() {
@@ -156,16 +192,30 @@ export function AdminDashboard({ initialDogs }: Props) {
             Create, edit, and mark Blue Heelers available / reserved / adopted.
           </p>
         </div>
-        <button type="button" className="btn btn-ghost" onClick={logout}>
-          Log out
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={seedDatabase}
+            disabled={busy}
+          >
+            Seed sample dogs
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={logout}>
+            Log out
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         {[
           { label: "Available", value: stats.available },
           { label: "Reserved", value: stats.reserved },
           { label: "Adopted", value: stats.sold },
+          {
+            label: "New requests",
+            value: requests.filter((r) => r.status === "new").length,
+          },
         ].map((stat) => (
           <div key={stat.label} className="border border-line bg-paper p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
@@ -354,6 +404,57 @@ export function AdminDashboard({ initialDogs }: Props) {
           {busy ? "Saving…" : editingId ? "Update listing" : "Publish listing"}
         </button>
       </form>
+
+      <div className="space-y-4">
+        <h2 className="display text-2xl font-bold uppercase tracking-[0.05em]">
+          Adoption requests ({requests.length})
+        </h2>
+        {requests.length === 0 ? (
+          <p className="border border-line bg-paper p-5 text-ink-soft">
+            No adoption requests yet.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {requests.map((req) => (
+              <li key={req.id} className="border border-line bg-paper p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="display text-xl font-bold uppercase tracking-[0.04em]">
+                      {req.dogName}{" "}
+                      <span className="text-sm font-semibold text-slate">
+                        {req.status}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {req.name} · {req.email} · {req.phone}
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                      {req.experience}
+                    </p>
+                    <p className="mt-2 text-xs text-muted">
+                      {new Date(req.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      ["new", "contacted", "approved", "declined"] as const
+                    ).map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        className="btn btn-ghost !min-h-8 !px-2 !text-xs"
+                        onClick={() => setRequestStatus(req.id, status)}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="space-y-4">
         <h2 className="display text-2xl font-bold uppercase tracking-[0.05em]">

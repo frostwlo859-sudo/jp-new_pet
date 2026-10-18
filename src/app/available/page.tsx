@@ -16,7 +16,18 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AvailablePage() {
-  const dogs = await readDogs();
+  let dogs: Awaited<ReturnType<typeof readDogs>> = [];
+  let dbError = "";
+
+  try {
+    dogs = await readDogs();
+  } catch (error) {
+    dbError =
+      error instanceof Error
+        ? error.message
+        : "Database unavailable. Set MONGODB_URI to load listings.";
+  }
+
   const forSale = dogs.filter((d) => d.status !== "sold");
   const sold = dogs.filter((d) => d.status === "sold");
 
@@ -30,6 +41,11 @@ export default async function AvailablePage() {
       />
 
       <section className="mx-auto max-w-7xl px-5 py-[var(--space-section)] md:px-8">
+        {dbError ? (
+          <p className="mb-8 border border-line bg-paper p-5 text-ink-soft">
+            {dbError}
+          </p>
+        ) : null}
         <Reveal>
           <SectionHeading
             eyebrow="Current kennel"

@@ -11,10 +11,38 @@ type Props = {
 
 export function AdoptForm({ dog }: Props) {
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const adoptionFee = dog.price;
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setBusy(true);
+    setError("");
+    const data = new FormData(e.currentTarget);
+
+    const res = await fetch("/api/adoptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dogSlug: dog.id,
+        dogName: dog.name,
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        phone: String(data.get("phone") || ""),
+        experience: String(data.get("experience") || ""),
+      }),
+    });
+
+    setBusy(false);
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error || "Could not save your request. Try again.");
+      return;
+    }
+
     trackEvent("generate_lead", {
       form: "adoption_application",
       dog_id: dog.id,
@@ -31,10 +59,9 @@ export function AdoptForm({ dog }: Props) {
           Adoption request received
         </p>
         <p className="mt-3 max-w-lg text-ink-soft">
-          Thanks — your adoption request for <strong>{dog.name}</strong> is with
-          the kennel. They&apos;ll follow up about a meet, the adoption fee (
-          {formatPrice(adoptionFee)}), and next steps. Nothing is charged on
-          this form.
+          Thanks — your adoption request for <strong>{dog.name}</strong> is
+          saved. The kennel will follow up about the adoption fee (
+          {formatPrice(adoptionFee)}) and next steps.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/available" className="btn btn-primary">
@@ -63,6 +90,12 @@ export function AdoptForm({ dog }: Props) {
           we confirm — not on this page.
         </p>
       </div>
+
+      {error ? (
+        <p className="border border-tan/40 bg-canvas px-4 py-3 text-sm text-ink">
+          {error}
+        </p>
+      ) : null}
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="block">
@@ -126,12 +159,8 @@ export function AdoptForm({ dog }: Props) {
         </span>
       </label>
 
-      <input type="hidden" name="dogId" value={dog.id} />
-      <input type="hidden" name="dogName" value={dog.name} />
-      <input type="hidden" name="price" value={dog.price} />
-
-      <button type="submit" className="btn btn-primary">
-        Submit adoption request for {dog.name}
+      <button type="submit" className="btn btn-primary" disabled={busy}>
+        {busy ? "Sending…" : `Submit adoption request for ${dog.name}`}
       </button>
     </form>
   );
