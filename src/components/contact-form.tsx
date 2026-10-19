@@ -2,19 +2,41 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
-import { trackEvent } from "@/lib/analytics";
 
 function ContactFormInner() {
   const searchParams = useSearchParams();
   const dog = searchParams.get("dog");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    trackEvent("generate_lead", {
-      form: "contact",
-      dog_interest: dog || "none",
+    setBusy(true);
+    setError("");
+    const data = new FormData(e.currentTarget);
+
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        topic: String(data.get("topic") || "other"),
+        message: String(data.get("message") || ""),
+        dog: dog || String(data.get("dog") || ""),
+      }),
     });
+
+    setBusy(false);
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error || "Could not send message.");
+      return;
+    }
+
     setSent(true);
   }
 
@@ -22,7 +44,7 @@ function ContactFormInner() {
     return (
       <div className="border border-line bg-paper p-8">
         <p className="display text-3xl font-bold uppercase tracking-[0.06em] text-ink">
-          Message logged
+          Message sent
         </p>
         <p className="mt-3 max-w-md text-ink-soft">
           Thanks — we&apos;ve received your message and will get back to you.
@@ -39,6 +61,11 @@ function ContactFormInner() {
       {dog ? (
         <p className="border border-slate/30 bg-canvas px-4 py-3 text-sm text-ink">
           Inquiring about <strong>{dog}</strong>
+        </p>
+      ) : null}
+      {error ? (
+        <p className="border border-tan/40 bg-canvas px-4 py-3 text-sm text-ink">
+          {error}
         </p>
       ) : null}
       <div className="grid gap-5 md:grid-cols-2">
@@ -92,8 +119,8 @@ function ContactFormInner() {
         />
       </label>
       <input type="hidden" name="dog" value={dog ?? ""} />
-      <button type="submit" className="btn btn-primary">
-        Send message
+      <button type="submit" className="btn btn-primary" disabled={busy}>
+        {busy ? "Sending…" : "Send message"}
       </button>
     </form>
   );

@@ -59,7 +59,9 @@ export function ReviewsBoard({ reviews }: { reviews: Review[] }) {
             </p>
             <div>
               <Stars rating={Math.round(reviewSummary.average)} />
-              <p className="mt-1 text-sm text-muted">Average rating</p>
+              <p className="mt-1 text-sm text-muted">
+                Average · {reviewSummary.count} reviews
+              </p>
             </div>
           </div>
         </div>

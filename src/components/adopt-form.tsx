@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { trackEvent } from "@/lib/analytics";
 import { formatPrice, type Dog } from "@/lib/dogs";
 
 type Props = {
@@ -43,12 +42,6 @@ export function AdoptForm({ dog }: Props) {
       return;
     }
 
-    trackEvent("generate_lead", {
-      form: "adoption_application",
-      dog_id: dog.id,
-      dog_name: dog.name,
-      value: dog.price,
-    });
     setSent(true);
   }
 

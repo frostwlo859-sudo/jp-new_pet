@@ -11,6 +11,7 @@ import {
   type Dog,
   type DogStatus,
 } from "@/lib/dogs";
+import type { ContactMessage } from "@/lib/messages-store";
 
 const emptyForm = {
   name: "",
@@ -30,15 +31,22 @@ const emptyForm = {
 type Props = {
   initialDogs: Dog[];
   initialRequests: AdoptionRequest[];
+  initialMessages: ContactMessage[];
 };
 
-export function AdminDashboard({ initialDogs, initialRequests }: Props) {
+export function AdminDashboard({
+  initialDogs,
+  initialRequests,
+  initialMessages,
+}: Props) {
   const [dogs, setDogs] = useState(initialDogs);
   const [requests, setRequests] = useState(initialRequests);
+  const [messages, setMessages] = useState(initialMessages);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const stats = useMemo(() => {
     return {
@@ -49,9 +57,10 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
   }, [dogs]);
 
   async function refresh() {
-    const [dogsRes, reqRes] = await Promise.all([
+    const [dogsRes, reqRes, msgRes] = await Promise.all([
       fetch("/api/dogs"),
       fetch("/api/adoptions"),
+      fetch("/api/messages"),
     ]);
     if (dogsRes.ok) {
       setDogs((await dogsRes.json()) as Dog[]);
@@ -59,6 +68,41 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
     if (reqRes.ok) {
       setRequests((await reqRes.json()) as AdoptionRequest[]);
     }
+    if (msgRes.ok) {
+      setMessages((await msgRes.json()) as ContactMessage[]);
+    }
+  }
+
+  async function uploadImage(file: File) {
+    setUploading(true);
+    setMessage("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body });
+    const payload = (await res.json()) as { url?: string; error?: string };
+    setUploading(false);
+    if (!res.ok || !payload.url) {
+      setMessage(payload.error || "Image upload failed.");
+      return;
+    }
+    setForm((prev) => ({ ...prev, image: payload.url! }));
+    setMessage("Image uploaded to Cloudinary.");
+  }
+
+  async function setMessageStatus(
+    id: string,
+    status: ContactMessage["status"],
+  ) {
+    const res = await fetch(`/api/messages/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      setMessage("Could not update contact message.");
+      return;
+    }
+    await refresh();
   }
 
   async function seedDatabase() {
@@ -207,7 +251,7 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {[
           { label: "Available", value: stats.available },
           { label: "Reserved", value: stats.reserved },
@@ -215,6 +259,10 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
           {
             label: "New requests",
             value: requests.filter((r) => r.status === "new").length,
+          },
+          {
+            label: "New messages",
+            value: messages.filter((m) => m.status === "new").length,
           },
         ].map((stat) => (
           <div key={stat.label} className="border border-line bg-paper p-5">
@@ -333,16 +381,43 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
               <option value="sold">Adopted</option>
             </select>
           </label>
-          <label className="block">
+          <label className="block md:col-span-2">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Image path
+              Photo (Cloudinary)
             </span>
-            <input
-              className="field"
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-              placeholder="/images/hero.jpg"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                className="field"
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+                placeholder="https://res.cloudinary.com/..."
+              />
+              <label className="btn btn-ghost !min-h-11 cursor-pointer whitespace-nowrap">
+                {uploading ? "Uploading…" : "Upload image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadImage(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {form.image ? (
+              <div className="relative mt-3 h-28 w-40 overflow-hidden bg-canvas-deep">
+                <Image
+                  src={form.image}
+                  alt=""
+                  fill
+                  sizes="160px"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
           </label>
           <label className="block">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
@@ -404,6 +479,56 @@ export function AdminDashboard({ initialDogs, initialRequests }: Props) {
           {busy ? "Saving…" : editingId ? "Update listing" : "Publish listing"}
         </button>
       </form>
+
+      <div className="space-y-4">
+        <h2 className="display text-2xl font-bold uppercase tracking-[0.05em]">
+          Contact messages ({messages.length})
+        </h2>
+        {messages.length === 0 ? (
+          <p className="border border-line bg-paper p-5 text-ink-soft">
+            No contact messages yet.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {messages.map((msg) => (
+              <li key={msg.id} className="border border-line bg-paper p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="display text-xl font-bold uppercase tracking-[0.04em]">
+                      {msg.topic}{" "}
+                      <span className="text-sm font-semibold text-slate">
+                        {msg.status}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {msg.name} · {msg.email}
+                      {msg.dog ? ` · ${msg.dog}` : ""}
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                      {msg.message}
+                    </p>
+                    <p className="mt-2 text-xs text-muted">
+                      {new Date(msg.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(["new", "read", "replied"] as const).map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        className="btn btn-ghost !min-h-8 !px-2 !text-xs"
+                        onClick={() => setMessageStatus(msg.id, status)}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="space-y-4">
         <h2 className="display text-2xl font-bold uppercase tracking-[0.05em]">

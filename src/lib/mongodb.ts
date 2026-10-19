@@ -1,6 +1,10 @@
+import { setServers } from "dns";
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+// Router DNS often fails MongoDB SRV lookups on Windows (querySrv ECONNREFUSED).
+setServers(["8.8.8.8", "1.1.1.1"]);
+
+const MONGODB_URI = process.env.MONGODB_URI?.trim();
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -31,9 +35,15 @@ export async function connectMongo() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 15000,
+      })
+      .catch((err) => {
+        cached.promise = null;
+        throw err;
+      });
   }
 
   cached.conn = await cached.promise;
