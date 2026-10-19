@@ -11,7 +11,6 @@ export function TawkChat() {
       id="tawk-to"
       strategy="lazyOnload"
       src={`https://embed.tawk.to/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`}
-      crossOrigin="*"
     />
   );
 }
