@@ -26,7 +26,7 @@ global.mongooseCache = cached;
 export async function connectMongo() {
   if (!MONGODB_URI) {
     throw new Error(
-      "Missing MONGODB_URI. Add it to .env.local (and Vercel env vars).",
+      "Kennel database is not configured.",
     );
   }
 

@@ -51,6 +51,16 @@ export async function listContactMessages(): Promise<ContactMessage[]> {
   return docs.map(toMessage);
 }
 
+export async function getContactMessage(
+  id: string,
+): Promise<ContactMessage | null> {
+  await connectMongo();
+  const doc = await ContactMessageModel.findById(
+    id,
+  ).lean<ContactMessageDocument | null>();
+  return doc ? toMessage(doc) : null;
+}
+
 export async function updateContactMessageStatus(
   id: string,
   status: ContactMessage["status"],

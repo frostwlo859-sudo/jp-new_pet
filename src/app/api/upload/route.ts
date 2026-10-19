@@ -24,8 +24,10 @@ export async function POST(request: Request) {
       url: uploaded.secure_url,
       publicId: uploaded.public_id,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Photo upload failed. Try another image." },
+      { status: 500 },
+    );
   }
 }

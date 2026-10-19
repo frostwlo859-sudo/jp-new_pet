@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminNav } from "@/components/admin-nav";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -23,11 +24,15 @@ export default function AdminLayout({
               Kennel dashboard
             </p>
           </div>
-          <Link href="/" className="btn btn-ghost-on-dark !min-h-9 !px-3 !text-sm">
+          <Link
+            href="/"
+            className="btn btn-ghost-on-dark !min-h-9 !px-3 !text-sm"
+          >
             View site
           </Link>
         </div>
       </header>
+      <AdminNav />
       <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">{children}</div>
     </div>
   );

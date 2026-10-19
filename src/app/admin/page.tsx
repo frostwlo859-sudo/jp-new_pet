@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AdminDashboard } from "@/components/admin-dashboard";
+import { AdminOverview } from "@/components/admin-overview";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { listAdoptionRequests } from "@/lib/adoptions-store";
 import { readDogs } from "@/lib/dogs-store";
@@ -18,25 +18,26 @@ export default async function AdminPage() {
       listAdoptionRequests(),
       listContactMessages(),
     ]);
+
     return (
-      <AdminDashboard
-        initialDogs={dogs}
-        initialRequests={requests}
-        initialMessages={messages}
+      <AdminOverview
+        available={dogs.filter((d) => d.status === "available").length}
+        reserved={dogs.filter((d) => d.status === "reserved").length}
+        sold={dogs.filter((d) => d.status === "sold").length}
+        newRequests={requests.filter((r) => r.status === "new").length}
+        newMessages={messages.filter((m) => m.status === "new").length}
+        dogCount={dogs.length}
       />
     );
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Could not load admin data.";
+  } catch {
     return (
       <div className="border border-line bg-paper p-8">
         <h1 className="display text-3xl font-bold uppercase tracking-[0.05em]">
-          Database not connected
+          Temporarily unavailable
         </h1>
-        <p className="mt-3 max-w-xl text-ink-soft">{message}</p>
-        <p className="mt-4 text-sm text-muted">
-          Check Atlas Network Access allows your IP, then restart the dev
-          server. Dogs already seeded stay in the database.
+        <p className="mt-3 max-w-xl text-ink-soft">
+          The kennel board could not load right now. Refresh the page in a
+          moment.
         </p>
       </div>
     );

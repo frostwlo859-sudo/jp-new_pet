@@ -4,6 +4,7 @@ import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
 import { images } from "@/lib/images";
+import { site } from "@/lib/nav";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -29,6 +30,19 @@ export default function ContactPage() {
               lead="Tell us about your household, activity level, and what you’re trying to decide. The more concrete, the more useful the reply can be."
             />
             <dl className="mt-8 space-y-4 text-ink-soft">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  Email
+                </dt>
+                <dd className="mt-1">
+                  <a
+                    href={`mailto:${site.email}`}
+                    className="text-ink underline decoration-line underline-offset-4 transition-colors hover:text-slate"
+                  >
+                    {site.email}
+                  </a>
+                </dd>
+              </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
                   Best for

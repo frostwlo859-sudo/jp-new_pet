@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DogCard } from "@/components/dog-card";
 import { Reveal } from "@/components/reveal";
 import {
   dogAgeLabel,
@@ -128,20 +129,10 @@ export default async function DogDetailPage({ params }: Props) {
             <h2 className="display text-3xl font-bold uppercase tracking-[0.05em]">
               Also available
             </h2>
-            <ul className="mt-6 space-y-3">
+            <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {others.map((item) => (
                 <li key={item.id}>
-                  <Link
-                    href={`/available/${item.id}`}
-                    className="flex items-center justify-between border border-line bg-paper px-5 py-4 transition-colors duration-150 hover:bg-canvas"
-                  >
-                    <span className="display text-xl font-bold uppercase tracking-[0.05em]">
-                      {item.name}
-                    </span>
-                    <span className="text-sm text-muted">
-                      {formatPrice(item.price)}
-                    </span>
-                  </Link>
+                  <DogCard dog={item} />
                 </li>
               ))}
             </ul>

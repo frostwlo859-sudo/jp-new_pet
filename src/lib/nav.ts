@@ -17,4 +17,5 @@ export const site = {
   tagline: "Blue Heelers for adoption",
   description:
     "Blue Heeler for Adoption — Australian Cattle Dogs looking for serious homes, with honest fit guidance, training notes, and owner reviews.",
+  email: "contact@blueheelerforadoption.com",
 } as const;

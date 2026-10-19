@@ -51,6 +51,16 @@ export async function listAdoptionRequests(): Promise<AdoptionRequest[]> {
   return docs.map(toRequest);
 }
 
+export async function getAdoptionRequest(
+  id: string,
+): Promise<AdoptionRequest | null> {
+  await connectMongo();
+  const doc = await AdoptionRequestModel.findById(
+    id,
+  ).lean<AdoptionRequestDocument | null>();
+  return doc ? toRequest(doc) : null;
+}
+
 export async function updateAdoptionRequestStatus(
   id: string,
   status: AdoptionRequest["status"],

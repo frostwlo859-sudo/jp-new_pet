@@ -25,7 +25,7 @@ export default async function AvailablePage() {
     dbError =
       error instanceof Error
         ? error.message
-        : "Database unavailable. Set MONGODB_URI to load listings.";
+        : "Listings are temporarily unavailable. Please try again soon.";
   }
 
   const forSale = dogs.filter((d) => d.status !== "sold");

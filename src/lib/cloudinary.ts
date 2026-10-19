@@ -7,7 +7,7 @@ export function configureCloudinary() {
 
   if (!cloud_name || !api_key || !api_secret) {
     throw new Error(
-      "Missing Cloudinary env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET",
+      "Photo storage is not configured.",
     );
   }
 
@@ -39,7 +39,7 @@ export async function uploadImageBuffer(
       },
       (error, result) => {
         if (error || !result) {
-          reject(error ?? new Error("Cloudinary upload failed"));
+          reject(error ?? new Error("Photo upload failed"));
           return;
         }
         resolve({

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BrandLockup } from "@/components/brand-lockup";
-import { navItems } from "@/lib/nav";
+import { navItems, site } from "@/lib/nav";
 
 export function SiteFooter() {
   return (
@@ -11,6 +11,15 @@ export function SiteFooter() {
           <p className="mt-4 max-w-md text-base leading-relaxed text-[#b7c0b9]">
             Blue Heelers only — loyal, driven Australian Cattle Dogs looking for
             serious homes that can keep up.
+          </p>
+          <p className="mt-4 text-sm uppercase tracking-[0.08em] text-[#c5cec7]">
+            Email{" "}
+            <a
+              href={`mailto:${site.email}`}
+              className="text-white transition-colors duration-150 hover:text-[#d5ddd7]"
+            >
+              {site.email}
+            </a>
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">

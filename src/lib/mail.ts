@@ -26,8 +26,12 @@ export async function sendAdminMail(options: {
   replyTo?: string;
 }) {
   const transporter = getMailTransporter();
-  const from = process.env.MAIL_FROM || required("SMTP_USER");
-  const to = required("ADMIN_EMAIL");
+  const from =
+    process.env.MAIL_FROM ||
+    "contact@blueheelerforadoption.com";
+  const to =
+    process.env.ADMIN_EMAIL ||
+    "contact@blueheelerforadoption.com";
 
   await transporter.sendMail({
     from,
